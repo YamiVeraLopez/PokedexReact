@@ -12,7 +12,7 @@ import {
 
 export const FilterBar = () => {
   const { handleCheckbox } = useContext(PokemonContext);
-  const [selected, setSelected] = React.useState([]);
+  const [selected, setSelected] = useState([]);
 
   const types = [
     grass,

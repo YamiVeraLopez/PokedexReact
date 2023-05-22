@@ -1,10 +1,10 @@
 import React, { useContext } from "react";
-import { FilterBar, PokemonList } from "../components";
+import {PokemonList } from "../components";
 import { PokemonContext } from "../context/PokemonContext";
 
 export const HomePage = () => {
 
-  const {onClickLoadMore, active} = useContext(PokemonContext)
+  /* const {onClickLoadMore, active} = useContext(PokemonContext) */
 
 
   return (
@@ -13,9 +13,9 @@ export const HomePage = () => {
         <PokemonList />
       </div>
       
-      <div  className="container">
+     {/*  <div  className="container">
         <button onClick={onClickLoadMore}>Cargar más...</button>
-      </div>
+      </div> */}
     </>
   );
 };

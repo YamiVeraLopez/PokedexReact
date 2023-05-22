@@ -3,8 +3,8 @@ import { PokemonContext } from "./PokemonContext";
 import { useForm } from "../hooks/useForm";
 
 export const PokemonProvider = ({ children }) => {
+  const [pokemons, setPokemons] = useState([]);
   const [allPokemons, setAllPokemons] = useState([]);
-  const [globalPokemons, setGlobalPokemons] = useState([]);
 
   const [offset, setOffset] = useState(0);
 
@@ -21,7 +21,7 @@ export const PokemonProvider = ({ children }) => {
 
   const baseURL = "https://pokeapi.co/api/v2/";
 
-  const getAllPokemons = async (limit = 20) => {
+  const getPokemons = async (limit = 20) => {
     const res = await fetch(
       `${baseURL}pokemon?limit=${limit}&offset=${offset}`
     );
@@ -37,13 +37,13 @@ export const PokemonProvider = ({ children }) => {
 
     const results = await Promise.all(promises);
 
-    setAllPokemons([...allPokemons, ...results]);
+    setPokemons([...pokemons, ...results]);
     setLoading(false);
   };
 
   // Llamar a todos los pokemones
 
-  const getGlobalPokemons = async () => {
+  const getAllPokemons = async () => {
     const res = await fetch(`${baseURL}pokemon?limit=10000&offset=0`);
 
     const data = await res.json();
@@ -57,7 +57,7 @@ export const PokemonProvider = ({ children }) => {
 
     const results = await Promise.all(promises);
 
-    setGlobalPokemons(results);
+    setAllPokemons(results);
     setLoading(false);
   };
 
@@ -71,29 +71,66 @@ export const PokemonProvider = ({ children }) => {
 
   // Lista de tipos y habilidades
 
-/*   const [types, setTypes] = useState([])
-  const [abilities, setAbilities] = useState([])
+  const [type, setType] = useState([]);
+  const [ability, setAbility] = useState([]);
 
-  const getTypes = async () => {
-    const res = await fetch(`${baseURL}type`);
+  const getTypes = async (typeValue, value) => {
+    const res = await fetch(`${baseURL}${typeValue}/${value}`);
     const data = await res.json();
-     setTypes(data.results)
-      return 
+
+    if (typeValue == "ability") {
+      setAbility(data.pokemon.pokemon);
+    } else {
+      setType(data.pokemon);
+    }
+
+    /*  const res = await fetch(`${baseURL}type/grass`);
+    const data = await res.json();
+    setTypes(data.results); */
+
+    return;
   };
 
-  const getAbilities = async () => {
+  useEffect(() => {
+    getTypes("ability", "adaptability");
+  }, []);
+
+
+/*   const getAbilities = async () => {
     const res = await fetch(`${baseURL}ability`);
     const data = await res.json();
-     setAbilities(data.results)
-     return
+    setAbilities(data.results);
+    return;
   }; */
 
-  useEffect(() => {
-    getAllPokemons();
-  }, [offset]);
+  // Eliminar uno o varios pokemones
+
+  const removePokemon = (pokemonNames) => {
+    setAllPokemons((prevPokemons) =>
+      prevPokemons.filter((pokemon) => !pokemonNames.includes(pokemon.name))
+    );
+  };
 
   useEffect(() => {
-    getGlobalPokemons();
+    getPokemons();
+  }, [offset]);
+
+  useEffect(() => {    
+    getAllPokemons();
+  }, []);
+
+  // guarda los pokémones en el Local Storage cada vez que haya cambios en el estado pokemons
+  useEffect(() => {
+    localStorage.setItem("pokemons", JSON.stringify(pokemons));
+  }, [pokemons]);
+
+  // Carga los pokémones del Local Storage cuando se inicie la aplicación
+
+  useEffect(() => {
+    const storedPokemons = JSON.parse(localStorage.getItem("pokemons"));
+    if (storedPokemons) {
+      setAllPokemons(storedPokemons);
+    }
   }, []);
 
   // btn cargar más
@@ -103,69 +140,119 @@ export const PokemonProvider = ({ children }) => {
 
   // filter functions + state
 
-  const [abilitySelected, setAbilitySelected] = useState({
-    "stench": false,
-    "drizzle": false,
-    "speedBoost": false,
-    "battleArmor": false,
-    "sturdy": false,
-    "damp": false,
-    "limber": false,
-    "sandVeil": false,
-    "statick": false,
-    "voltAbsorb": false,
-    "waterAbsorb": false,
-    "oblivious": false,
-    "cloudNine": false,
-    "compoundEyes": false,
-    "insomnia": false,
-    "colorChange": false,
-    "immunity": false,
-    "flashFire": false,
-    "shieldDust": false,
-    "ownTempo": false,
-
-  });
-  const [typeSelected, setTypeSelected] = useState({
-    grass: false,
-    normal: false,
-    fighting: false,
-    flying: false,
-    poison: false,
-    ground: false,
-    rock: false,
-    bug: false,
-    ghost: false,
-    steel: false,
-    fire: false,
-    water: false,
-    electric: false,
-    psychic: false,
-    ice: false,
-    dragon: false,
-    dark: false,
-    fairy: false,
-    unknow: false,
-    shadow: false,
-  });
+/*   const [abilitySelected, setAbilitySelected] = useState({
+    stench: false,
+    drizzle: false,
+    speedBoost: false,
+    battleArmor: false,
+    sturdy: false,
+    damp: false,
+    limber: false,
+    sandVeil: false,
+    statick: false,
+    voltAbsorb: false,
+    waterAbsorb: false,
+    oblivious: false,
+    cloudNine: false,
+    compoundEyes: false,
+    insomnia: false,
+    colorChange: false,
+    immunity: false,
+    flashFire: false,
+    shieldDust: false,
+    ownTempo: false,
+  }); */
+  const [typeSelected, setTypeSelected] = useState([
+    "grass",
+    "normal",
+    "fighting",
+    "flying",
+    "poison",
+    "ground",
+    "rock",
+    "bug",
+    "ghost",
+    "steel",
+    "fire",
+    "water",
+    "electric",
+    "psychic",
+    "ice",
+    "dragon",
+    "dark",
+    "fairy",
+    "unknow",
+    "shadow",
+  ]);
 
   const [filteredPokemons, setFilteredPokemons] = useState([]);
 
   const handleCheckbox = (e) => {
+    let typePokemon = e;
     /* {console.log(e.target)} */
-    setTypeSelected({
-      ...typeSelected,
-      [e.target.name]: e.target.checked,
+    setFilteredPokemons((typeSelected) => {
+      // Verificar si el nombre del Pokémon ya está en la lista de seleccionados
+      if (!typeSelected.includes(typePokemon)) {
+        return [...typeSelected, typePokemon];
+      } else {
+        // Filtrar el Pokémon seleccionado de la lista
+        return typeSelected.filter((type) => type !== typePokemon);
+      }
     });
-
-    if (e.target.checked) {
-      const filteredResults = globalPokemons.filter((pokemon) =>
-        pokemon.types.map((type) => type.name).includes(e.target.name)
-      );
-      /* console.log(type + "type"); */
-      console.log(filteredResults);
-    }
   };
+
+  const handleFilter = (filterType, filterValue) => {
+    setSelectedPokemons((prevSelectedPokemons) => {
+      let filteredPokemons = [];
+
+      switch (filterType) {
+        case "type":
+          filteredPokemons = prevSelectedPokemons.filter((pokemonName) => {
+            // Aquí implementa la lógica para obtener los tipos del Pokémon y compararlos con el valor de filtro.
+            // Puedes utilizar la PokeAPI o cualquier otra fuente de datos para obtener los datos completos de cada Pokémon y sus tipos.
+
+            const pokemonData = obtenerDatosDelPokemon(pokemonName); // Obtener los datos del Pokémon
+            const pokemonTypes = pokemonData.type.map(
+              (typeData) => typeData.name
+            ); // Obtener los tipos del Pokémon
+
+            return pokemonTypes.includes(filterValue); // Verificar si el tipo de Pokémon coincide con el valor de filtro
+          });
+          break;
+
+        case "ability":
+          filteredPokemons = prevSelectedPokemons.filter((pokemonName) => {
+            // Aquí implementa la lógica para obtener las habilidades del Pokémon y compararlas con el valor de filtro.
+            // Puedes utilizar la PokeAPI o cualquier otra fuente de datos para obtener los datos completos de cada Pokémon y sus habilidades.
+
+            const pokemonData = obtenerDatosDelPokemon(pokemonName); // Obtener los datos del Pokémon
+            const pokemonAbilities = pokemonData.abilities.map(
+              (abilityData) => abilityData.name
+            ); // Obtener las habilidades del Pokémon
+
+            return pokemonAbilities.includes(filterValue); // Verificar si la habilidad del Pokémon coincide con el valor de filtro
+          });
+          break;
+
+        default:
+          filteredPokemons = prevSelectedPokemons; // Si el tipo de filtro no coincide con "type" ni "ability", mantener los Pokémon sin cambios
+      }
+
+      return filteredPokemons;
+    });
+  };
+
+  /*  const pokemonName = e;
+
+    setSelectedPokemons((prevSelectedPokemons) => {
+      // Verificar si el nombre del Pokémon ya está en la lista de seleccionados
+      if (!prevSelectedPokemons.includes(pokemonName)) {
+        return [...prevSelectedPokemons, pokemonName];
+      } else {
+        // Filtrar el Pokémon seleccionado de la lista
+        return prevSelectedPokemons.filter((name) => name !== pokemonName);
+      }
+    }); */
 
   return (
     <PokemonContext.Provider
@@ -173,8 +260,8 @@ export const PokemonProvider = ({ children }) => {
         valueSearch,
         onInputChange,
         onResetForm,
+        pokemons,
         allPokemons,
-        globalPokemons,
         getPokemonById,
         onClickLoadMore,
         // loader
@@ -186,7 +273,8 @@ export const PokemonProvider = ({ children }) => {
         // filter container checkbox
         handleCheckbox,
         filteredPokemons,
-    
+        //eliminado de pokemones
+        removePokemon,
       }}
     >
       {children}
